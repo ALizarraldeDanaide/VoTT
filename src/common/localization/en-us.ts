@@ -233,6 +233,9 @@ export const english: IAppStrings = {
             saveProject: "Save Project",
             exportProject: "Export Project",
             activeLearning: "Active Learning",
+            zoomIn: "Zoom In",
+            ZoomOut: "Zoom Out",
+            zoomReset: "Reset Zoom",
         },
         videoPlayer: {
             previousTaggedFrame: {

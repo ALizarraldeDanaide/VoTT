@@ -66,6 +66,8 @@ export interface IAssetPreviewState {
  */
 export interface IAssetPreviewSettings {
     videoSettings: IProjectVideoSettings;
+    zoom: number;
+    zoomStep: number;
 }
 
 /**
@@ -101,6 +103,12 @@ export class AssetPreview extends React.Component<IAssetPreviewProps, IAssetPrev
     }
 
     public render() {
+        let style;
+        if ( this.props.additionalSettings && this.props.additionalSettings.zoom ) {
+            style = {};
+            style.width = Math.round(this.props.asset.size.width * this.props.additionalSettings.zoom)+ "px";
+            style.height = Math.round(this.props.asset.size.height * this.props.additionalSettings.zoom) + "px";
+        }
         const { loaded, hasError } = this.state;
         const size = this.props.asset.size;
         const classNames = ["asset-preview"];
@@ -114,7 +122,7 @@ export class AssetPreview extends React.Component<IAssetPreviewProps, IAssetPrev
 
         return (
             <div className={classNames.join(" ")}>
-                <div className="asset-preview-container">
+                <div className="asset-preview-container" style={style}>
                     {!loaded &&
                         <div className="asset-loading">
                             <div className="asset-loading-spinner">
