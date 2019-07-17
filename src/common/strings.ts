@@ -232,6 +232,7 @@ export interface IAppStrings {
             saveProject: string;
             exportProject: string;
             activeLearning: string;
+            toggleCanvas:string;
             zoomIn: string;
             ZoomOut: string;
             zoomReset: string;

@@ -235,6 +235,7 @@ export const spanish: IAppStrings = {
             saveProject: "Guardar Proyecto",
             exportProject: "Exprtar Proyecto",
             activeLearning: "Aprendizaje Activo",
+            toggleCanvas: "Habilitar/Deshabilitar Editor",
             zoomIn: "Acercar",
             ZoomOut: "Alejar",
             zoomReset: "Reiniciar Zoom",
