@@ -235,6 +235,9 @@ export const spanish: IAppStrings = {
             saveProject: "Guardar Proyecto",
             exportProject: "Exprtar Proyecto",
             activeLearning: "Aprendizaje Activo",
+            zoomIn: "Acercar",
+            ZoomOut: "Alejar",
+            zoomReset: "Reiniciar Zoom",
         },
         videoPlayer: {
             previousTaggedFrame: {

@@ -18,6 +18,9 @@ export enum ToolbarItemName {
     SaveProject = "saveProject",
     ExportProject = "exportProject",
     ActiveLearning = "activeLearning",
+    ZoomIn ="zoomIn",
+    ZoomOut ="zoomOut",
+    ZoomReset ="zoomReset",
 }
 
 export enum ToolbarItemGroup {
@@ -147,4 +150,31 @@ export default function registerToolbar() {
         type: ToolbarItemType.Action,
         accelerators: ["CmdOrCtrl+E", "CmdOrCtrl+e"],
     }, ExportProject);
+
+    ToolbarItemFactory.register({
+        name: ToolbarItemName.ZoomOut,
+        tooltip: strings.editorPage.toolbar.ZoomOut,
+        icon: "fas fa-search-minus",
+        group: ToolbarItemGroup.Navigation,
+        type: ToolbarItemType.Action,
+        accelerators: ["CmdOrCtrl+PageDown"],
+    });
+
+    ToolbarItemFactory.register({
+        name: ToolbarItemName.ZoomReset,
+        tooltip: strings.editorPage.toolbar.zoomReset,
+        icon: "fas fa-search-location",
+        group: ToolbarItemGroup.Navigation,
+        type: ToolbarItemType.Action,
+        accelerators: ["CmdOrCtrl+Home"],
+    });
+
+    ToolbarItemFactory.register({
+        name: ToolbarItemName.ZoomIn,
+        tooltip: strings.editorPage.toolbar.zoomIn,
+        icon: "fas fa-search-plus",
+        group: ToolbarItemGroup.Navigation,
+        type: ToolbarItemType.Action,
+        accelerators: ["CmdOrCtrl+PageUp"],
+    });
 }

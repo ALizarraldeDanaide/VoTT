@@ -232,6 +232,9 @@ export interface IAppStrings {
             saveProject: string;
             exportProject: string;
             activeLearning: string;
+            zoomIn: string;
+            ZoomOut: string;
+            zoomReset: string;
         }
         videoPlayer: {
             nextTaggedFrame: {

@@ -48,10 +48,28 @@
         display: flex;
         flex-grow: 1;
         flex-direction: row;
+        flex-basis: 400px;
 
         position: relative;
-        overflow: hidden;
+        overflow: scroll;
         background-color: $darker-5;
+      }
+    }
+
+    .asset-preview {
+      display: flex;
+      flex-grow: 1;
+    
+      &-container {
+        display: flex;
+        position: absolute;
+        flex-direction: column;
+        width: 100%;
+        text-align: center;
+      }
+    
+      &.portrait {
+        margin: 0 auto;
       }
     }
 
@@ -59,13 +77,14 @@
       background-color: #1e2024 !important;
 
       &-video {
-        position: static;
+        position: absolute;
         width: 100%;
         height: calc(100% - 3em);
       }
 
       &-control-bar {
-        position: relative;
+        position: absolute;
+        z-index: 5;
 
         &-disabled {
           background-color: $darker-6;
