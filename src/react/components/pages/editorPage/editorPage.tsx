@@ -304,10 +304,22 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
                         (event.pageY - event.currentTarget.getBoundingClientRect().top)
                     ) * 100 / this.state.editorSize.height ;
 
-                    this.updateZoom(this.state.additionalSettings.zoomStep, { width:pointXasPercent, height: pointYasPercent });
+                    // this.updateZoom(this.state.additionalSettings.zoomStep, { width:pointXasPercent, height: pointYasPercent });
+                    this.updateZoom(
+                        this.state.additionalSettings.zoomStep,
+                        this.realReviewPointToPercentage(
+                            this.getPointFromEditorWindow( 
+                                (event.pageX - event.currentTarget.getBoundingClientRect().left),
+                                (event.pageY - event.currentTarget.getBoundingClientRect().top) 
+                            )
+                        )
+                    );
                 }
                 else{
-                    this.zoomInCenter()
+                    this.updateZoom(
+                        this.state.additionalSettings.zoomStep,
+                        this.lastZoomPosition
+                    );
                 }
                 this.scrollStart = new Date();
             } else {
@@ -318,6 +330,9 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
                     console.warn("imposible hacer Zoom OUT");
                 }
             }
+        }
+        else{
+            this.updateLastPosition();
         }
     };
 
@@ -333,6 +348,42 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
         let scrollH = Math.max( (this.state.editorSize.height * this.lastZoomPosition.height / 100) - (this.mainEditor.current.clientHeight/2), 0);
         this.mainEditor.current.scrollTo( scrollW, scrollH);
     }
+
+    private updateLastPosition = () => {
+        this.lastZoomPosition = this.getActualCenterPercentage();
+    }
+
+    // functions to calculate positions between real zoomed image and current view
+
+    private getActualTopLeft = (): ISize => {
+        let coord: ISize = {width:0, height:0};
+        coord.width = this.mainEditor.current.scrollLeft * this.state.editorSize.width / this.mainEditor.current.scrollWidth;
+        coord.height = this.mainEditor.current.scrollTop * this.state.editorSize.height / this.mainEditor.current.scrollHeight;
+        return coord;
+    }
+
+    private getActualCenter = (): ISize => {
+        return this.getPointFromEditorWindow( (this.mainEditor.current.clientWidth/2), (this.mainEditor.current.clientHeight/2));
+    }
+
+    private getPointFromEditorWindow = ( editorX?:number, editorY?:number ): ISize => {
+        let coord: ISize = this.getActualTopLeft();
+        coord.width += (editorX ? editorX : 0);
+        coord.height += (editorY ? editorY : 0);
+        return coord;
+    }
+
+    private getActualCenterPercentage = (): ISize => {
+        return this.realReviewPointToPercentage(this.getActualCenter());
+    }
+
+    private realReviewPointToPercentage = ( point:ISize ): ISize => {
+        let coord: ISize = {width:0, height:0};
+        coord.width = point.width * 100 / this.state.editorSize.width;
+        coord.height = point.height * 100 / this.state.editorSize.height;
+        return coord;
+    }
+    
 
     /**
      * Updates the zoom by a step to an optional point of the preview (sent as percentages)
@@ -363,16 +414,23 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
         );
     }
 
+    private centeredZoom = ( zoomStep?:number ) => {
+        this.updateZoom(zoomStep, this.getActualCenterPercentage());
+    }
+
     private resetZoom = () => {
-        this.updateZoom( -this.state.additionalSettings.zoom+1);
+        this.updateLastPosition();
+        this.centeredZoom( -this.state.additionalSettings.zoom + 1 );
     }
 
     private zoomInCenter = () => {
-        this.updateZoom();
+        this.updateLastPosition();
+        this.centeredZoom( this.state.additionalSettings.zoomStep );
     }
 
     private zoomOutCenter = () => {
-        this.updateZoom(-this.state.additionalSettings.zoomStep);
+        this.updateLastPosition();
+        this.centeredZoom( -this.state.additionalSettings.zoomStep) ;
     }
 
     /**
