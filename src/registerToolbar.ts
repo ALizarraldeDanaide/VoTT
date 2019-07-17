@@ -18,7 +18,6 @@ export enum ToolbarItemName {
     SaveProject = "saveProject",
     ExportProject = "exportProject",
     ActiveLearning = "activeLearning",
-    ToggleCanvas = "toggleCanvas",
     ZoomIn ="zoomIn",
     ZoomOut ="zoomOut",
     ZoomReset ="zoomReset",
@@ -60,15 +59,6 @@ export default function registerToolbar() {
         group: ToolbarItemGroup.Canvas,
         type: ToolbarItemType.State,
         accelerators: ["P", "p"],
-    });
-
-    ToolbarItemFactory.register({
-        name: ToolbarItemName.ToggleCanvas,
-        tooltip: strings.editorPage.toolbar.toggleCanvas,
-        icon: "fa-glasses",
-        group: ToolbarItemGroup.Canvas,
-        type: ToolbarItemType.Action,
-        accelerators: ["T", "t"],
     });
 
     ToolbarItemFactory.register({

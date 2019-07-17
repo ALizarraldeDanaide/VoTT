@@ -697,11 +697,6 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
                     editorMode: EditorMode.Select,
                 });
                 break;
-            case ToolbarItemName.ToggleCanvas:
-                this.canvas.current.setState({
-                    enabled: !this.canvas.current.state.enabled,
-                });
-                break;
             case ToolbarItemName.PreviousAsset:
                 await this.goToRootAsset(-1);
                 break;
