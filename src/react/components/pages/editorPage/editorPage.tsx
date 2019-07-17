@@ -1,5 +1,5 @@
 import _ from "lodash";
-import React, { RefObject } from "react";
+import React, { RefObject, WheelEvent } from "react";
 import { connect } from "react-redux";
 import { RouteComponentProps } from "react-router-dom";
 import SplitPane from "react-split-pane";
@@ -71,6 +71,8 @@ export interface IEditorPageState {
     lockedTags: string[];
     /** Size of the asset thumbnails to display in the side bar */
     thumbnailSize: ISize;
+    /** Size of the asset to display in the editor */
+    editorSize: ISize;
     /**
      * Whether or not the editor is in a valid state
      * State is invalid when a region has not been tagged
@@ -111,8 +113,11 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
         additionalSettings: {
             videoSettings: (this.props.project) ? this.props.project.videoSettings : null,
             activeLearningSettings: (this.props.project) ? this.props.project.activeLearningSettings : null,
+            zoom: 1.0,
+            zoomStep: 0.1,
         },
         thumbnailSize: this.props.appSettings.thumbnailSize || { width: 175, height: 155 },
+        editorSize: this.state && this.state.selectedAsset ? this.state.selectedAsset.asset.size : { width: 400, height: 400 },
         isValid: true,
         showInvalidRegionWarning: false,
     };
@@ -120,9 +125,13 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
     private activeLearningService: ActiveLearningService = null;
     private loadingProjectAssets: boolean = false;
     private toolbarItems: IToolbarItemRegistration[] = ToolbarItemFactory.getToolbarItems();
+    private mainEditor: RefObject<HTMLDivElement> = React.createRef();
     private canvas: RefObject<Canvas> = React.createRef();
+    private preview: RefObject<AssetPreview> = React.createRef();
     private renameTagConfirm: React.RefObject<Confirm> = React.createRef();
     private deleteTagConfirm: React.RefObject<Confirm> = React.createRef();
+    private scrollStart:Date = null;
+    private lastZoomPosition = { width: 0, height: 0};
 
     public async componentDidMount() {
         const projectId = this.props.match.params["projectId"];
@@ -149,6 +158,8 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
                 additionalSettings: {
                     videoSettings: (this.props.project) ? this.props.project.videoSettings : null,
                     activeLearningSettings: (this.props.project) ? this.props.project.activeLearningSettings : null,
+                    zoom: (this.state.additionalSettings? this.state.additionalSettings.zoom : 1),
+                    zoomStep: (this.state.additionalSettings? this.state.additionalSettings.zoomStep : 0.1),
                 },
             });
         }
@@ -211,7 +222,7 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
                                     actions={this.props.actions}
                                     onToolbarItemSelected={this.onToolbarItemSelected} />
                             </div>
-                            <div className="editor-page-content-main-body">
+                            <div className="editor-page-content-main-body" ref={this.mainEditor} onWheel={(e) => this.onEditScroll(e)}>
                                 {selectedAsset &&
                                     <Canvas
                                         ref={this.canvas}
@@ -224,6 +235,7 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
                                         project={this.props.project}
                                         lockedTags={this.state.lockedTags}>
                                         <AssetPreview
+                                            ref={this.preview}
                                             additionalSettings={this.state.additionalSettings}
                                             autoPlay={true}
                                             controlsEnabled={this.state.isValid}
@@ -274,6 +286,93 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
         this.setState({
             selectedRegions: [],
         });
+    }
+
+    private onEditScroll = (event:WheelEvent) => {
+        if ( event.ctrlKey ) {
+            if ( event.deltaY < 0 ){
+                if ( !this.scrollStart || this.scrollStart.getTime() < (Date.now() - 1000) ){
+                    let pointXasPercent = (
+                        (this.mainEditor.current.scrollLeft * this.state.editorSize.width / this.mainEditor.current.scrollWidth) 
+                        + 
+                        (event.pageX - event.currentTarget.getBoundingClientRect().left)
+                    ) * 100 / this.state.editorSize.width ;
+                    
+                    let pointYasPercent = (
+                        (this.mainEditor.current.scrollTop * this.state.editorSize.height / this.mainEditor.current.scrollHeight) 
+                        + 
+                        (event.pageY - event.currentTarget.getBoundingClientRect().top)
+                    ) * 100 / this.state.editorSize.height ;
+
+                    this.updateZoom(this.state.additionalSettings.zoomStep, { width:pointXasPercent, height: pointYasPercent });
+                }
+                else{
+                    this.zoomInCenter()
+                }
+                this.scrollStart = new Date();
+            } else {
+                if( (this.state.additionalSettings.zoom - this.state.additionalSettings.zoomStep) > this.state.additionalSettings.zoomStep){
+                    this.zoomOutCenter();
+                }
+                else{
+                    console.warn("imposible hacer Zoom OUT");
+                }
+            }
+        }
+    };
+
+
+    /**
+     * Centers the scroll to the last argument sent or uses the last zoomed position
+     * @Params pointInPercentage The X and Y coordinates of the point to zoom as percentage
+     */
+    private centerPreview( pointInPercentage?:ISize){//percentW?:number, percentH?:number){
+        this.lastZoomPosition.width = (pointInPercentage ? pointInPercentage.width : this.lastZoomPosition.width);
+        this.lastZoomPosition.height = (pointInPercentage ? pointInPercentage.height : this.lastZoomPosition.height);
+        let scrollW = Math.max( (this.state.editorSize.width * this.lastZoomPosition.width / 100) - (this.mainEditor.current.clientWidth/2), 0);
+        let scrollH = Math.max( (this.state.editorSize.height * this.lastZoomPosition.height / 100) - (this.mainEditor.current.clientHeight/2), 0);
+        this.mainEditor.current.scrollTo( scrollW, scrollH);
+    }
+
+    /**
+     * Updates the zoom by a step to an optional point of the preview (sent as percentages)
+     * @Params zoomStep The step to zoom, uses the default if not sent
+     * @Params pointInPercentage The X and Y coordinates of the point to zoom as percentage
+     */
+    private updateZoom = ( zoomStep?:number, pointInPercent?:ISize ) => {
+        let step:number = zoomStep ? zoomStep : (this.state.additionalSettings ? this.state.additionalSettings.zoomStep : 0);
+        this.setState({
+            additionalSettings: { 
+                ...this.state.additionalSettings,
+                zoom: this.state.additionalSettings.zoom + step,
+            },
+            editorSize: { 
+                ...this.state.editorSize,
+                width: Math.round(this.state.selectedAsset.asset.size.width * (this.state.additionalSettings.zoom + step) ),
+                height: Math.round(this.state.selectedAsset.asset.size.height * (this.state.additionalSettings.zoom + step) ),
+            }
+        },
+        () => {
+            this.forceUpdate( 
+                () => {
+                    this.canvas.current.forceResize();
+                    this.centerPreview(pointInPercent);
+                }
+            );
+        }
+        );
+    }
+
+    private resetZoom = () => {
+        this.updateZoom( -this.state.additionalSettings.zoom+1);
+    }
+
+    private zoomInCenter = () => {
+        this.updateZoom();
+    }
+
+    private zoomOutCenter = () => {
+        this.updateZoom(-this.state.additionalSettings.zoomStep);
     }
 
     /**
@@ -566,6 +665,15 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
             case ToolbarItemName.ActiveLearning:
                 await this.predictRegions();
                 break;
+            case ToolbarItemName.ZoomReset:
+                await this.resetZoom();
+                break;
+            case ToolbarItemName.ZoomIn:
+                await this.zoomInCenter();
+                break;
+            case ToolbarItemName.ZoomOut:
+                await this.zoomOutCenter();
+                break;
         }
     }
 
@@ -643,6 +751,8 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
                 const assetProps = await HtmlFileReader.readAssetAttributes(asset);
                 assetMetadata.asset.size = { width: assetProps.width, height: assetProps.height };
             }
+            this.state.editorSize.width = Math.round(assetMetadata.asset.size.width * this.state.additionalSettings.zoom);
+            this.state.editorSize.height = Math.round(assetMetadata.asset.size.height * this.state.additionalSettings.zoom);
         } catch (err) {
             console.warn("Error computing asset size");
         }
