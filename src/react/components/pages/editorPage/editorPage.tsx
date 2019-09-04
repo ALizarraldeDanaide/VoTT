@@ -419,8 +419,29 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
     }
 
     private resetZoom = () => {
-        this.updateLastPosition();
-        this.centeredZoom( -this.state.additionalSettings.zoom + 1 );
+
+        this.lastZoomPosition.height = 0;
+        this.lastZoomPosition.width = 0;
+        this.setState({
+            additionalSettings: { 
+                ...this.state.additionalSettings,
+                zoom: 1,
+            },
+            editorSize: { 
+                ...this.state.editorSize,
+                width: this.state.selectedAsset.asset.size.width,
+                height: this.state.selectedAsset.asset.size.height ,
+            }
+        },
+        () => {
+            this.forceUpdate( 
+                () => {
+                    this.canvas.current.forceResize();
+                    this.centerPreview({width: 0, height: 0});
+                }
+            );
+        }
+        );
     }
 
     private zoomInCenter = () => {
@@ -820,6 +841,7 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
         }, async () => {
             await this.onAssetMetadataChanged(assetMetadata);
         });
+        await this.resetZoom();
     }
 
     private loadProjectAssets = async (): Promise<void> => {
