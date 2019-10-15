@@ -31,6 +31,7 @@ import Alert from "../../common/alert/alert";
 import Confirm from "../../common/confirm/confirm";
 import { ActiveLearningService } from "../../../../services/activeLearningService";
 import { toast } from "react-toastify";
+import { Zoom } from "../../../../common/zoom";
 
 /**
  * Properties for Editor Page
@@ -113,8 +114,7 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
         additionalSettings: {
             videoSettings: (this.props.project) ? this.props.project.videoSettings : null,
             activeLearningSettings: (this.props.project) ? this.props.project.activeLearningSettings : null,
-            zoom: 1.0,
-            zoomStep: 0.1,
+            zoom: new Zoom()
         },
         thumbnailSize: this.props.appSettings.thumbnailSize || { width: 175, height: 155 },
         editorSize: this.state && this.state.selectedAsset ? this.state.selectedAsset.asset.size : { width: 400, height: 400 },
@@ -158,8 +158,7 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
                 additionalSettings: {
                     videoSettings: (this.props.project) ? this.props.project.videoSettings : null,
                     activeLearningSettings: (this.props.project) ? this.props.project.activeLearningSettings : null,
-                    zoom: (this.state.additionalSettings? this.state.additionalSettings.zoom : 1),
-                    zoomStep: (this.state.additionalSettings? this.state.additionalSettings.zoomStep : 0.1),
+                    zoom: new Zoom()
                 },
             });
         }
@@ -305,8 +304,7 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
                     ) * 100 / this.state.editorSize.height ;
 
                     // this.updateZoom(this.state.additionalSettings.zoomStep, { width:pointXasPercent, height: pointYasPercent });
-                    this.updateZoom(
-                        this.state.additionalSettings.zoomStep,
+                    this.zoomIn(
                         this.realReviewPointToPercentage(
                             this.getPointFromEditorWindow( 
                                 (event.pageX - event.currentTarget.getBoundingClientRect().left),
@@ -316,19 +314,11 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
                     );
                 }
                 else{
-                    this.updateZoom(
-                        this.state.additionalSettings.zoomStep,
-                        this.lastZoomPosition
-                    );
+                    this.zoomIn(this.lastZoomPosition);
                 }
                 this.scrollStart = new Date();
             } else {
-                if( (this.state.additionalSettings.zoom - this.state.additionalSettings.zoomStep) > this.state.additionalSettings.zoomStep){
-                    this.zoomOutCenter();
-                }
-                else{
-                    console.warn("imposible hacer Zoom OUT");
-                }
+                this.zoomOutCenter();
             }
         }
         else{
@@ -390,17 +380,12 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
      * @Params zoomStep The step to zoom, uses the default if not sent
      * @Params pointInPercentage The X and Y coordinates of the point to zoom as percentage
      */
-    private updateZoom = ( zoomStep?:number, pointInPercent?:ISize ) => {
-        let step:number = zoomStep ? zoomStep : (this.state.additionalSettings ? this.state.additionalSettings.zoomStep : 0);
+    private resizeEditor = (pointInPercent?:ISize ) => {
         this.setState({
-            additionalSettings: { 
-                ...this.state.additionalSettings,
-                zoom: this.state.additionalSettings.zoom + step,
-            },
-            editorSize: { 
+            editorSize: {
                 ...this.state.editorSize,
-                width: Math.round(this.state.selectedAsset.asset.size.width * (this.state.additionalSettings.zoom + step) ),
-                height: Math.round(this.state.selectedAsset.asset.size.height * (this.state.additionalSettings.zoom + step) ),
+                width: Math.round(this.state.selectedAsset.asset.size.width * this.state.additionalSettings.zoom.actualZoom() ),
+                height: Math.round(this.state.selectedAsset.asset.size.height * this.state.additionalSettings.zoom.actualZoom() ),
             }
         },
         () => {
@@ -414,44 +399,48 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
         );
     }
 
-    private centeredZoom = ( zoomStep?:number ) => {
-        this.updateZoom(zoomStep, this.getActualCenterPercentage());
+    /**
+     * zooms in to a point
+     */
+    private zoomIn = (pointInPercent?: ISize): void => {
+        this.updateLastPosition();
+        this.state.additionalSettings.zoom.zoomIn();
+        this.resizeEditor(pointInPercent);
     }
 
-    private resetZoom = () => {
+    /**
+     * zooms out to a point
+     */
+    private zoomOut = (pointInPercent?: ISize): void => {
+        this.updateLastPosition();
+        this.state.additionalSettings.zoom.zoomOut();
+        this.resizeEditor(pointInPercent);
+    }
 
+    /**
+     * resets the zoom to initial value
+     */
+    private resetZoom = () => {
         this.lastZoomPosition.height = 0;
         this.lastZoomPosition.width = 0;
-        this.setState({
-            additionalSettings: { 
-                ...this.state.additionalSettings,
-                zoom: 1,
-            },
-            editorSize: { 
-                ...this.state.editorSize,
-                width: this.state.selectedAsset.asset.size.width,
-                height: this.state.selectedAsset.asset.size.height ,
-            }
-        },
-        () => {
-            this.forceUpdate( 
-                () => {
-                    this.canvas.current.forceResize();
-                    this.centerPreview({width: 0, height: 0});
-                }
-            );
-        }
-        );
+        this.state.additionalSettings.zoom.resetZoom();
+        this.resizeEditor({width: 0, height: 0});
     }
 
+    /**
+     * zooms in to the center of the viewport
+     */
     private zoomInCenter = () => {
         this.updateLastPosition();
-        this.centeredZoom( this.state.additionalSettings.zoomStep );
+        this.zoomIn( this.getActualCenterPercentage() );
     }
 
+    /**
+     * zooms out keeping the center of the viewport
+     */
     private zoomOutCenter = () => {
         this.updateLastPosition();
-        this.centeredZoom( -this.state.additionalSettings.zoomStep) ;
+        this.zoomOut(this.getActualCenterPercentage()) ;
     }
 
     /**
@@ -830,8 +819,8 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
                 const assetProps = await HtmlFileReader.readAssetAttributes(asset);
                 assetMetadata.asset.size = { width: assetProps.width, height: assetProps.height };
             }
-            this.state.editorSize.width = Math.round(assetMetadata.asset.size.width * this.state.additionalSettings.zoom);
-            this.state.editorSize.height = Math.round(assetMetadata.asset.size.height * this.state.additionalSettings.zoom);
+            this.state.editorSize.width = Math.round(assetMetadata.asset.size.width * this.state.additionalSettings.zoom.actualZoom());
+            this.state.editorSize.height = Math.round(assetMetadata.asset.size.height * this.state.additionalSettings.zoom.actualZoom());
         } catch (err) {
             console.warn("Error computing asset size");
         }

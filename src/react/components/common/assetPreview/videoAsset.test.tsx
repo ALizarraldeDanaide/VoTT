@@ -5,6 +5,7 @@ import { IVideoAssetProps, VideoAsset, IVideoPlayerState, IVideoAssetState } fro
 import MockFactory from "../../../../common/mockFactory";
 import { CustomVideoPlayerButton } from "../../common/videoPlayer/customVideoPlayerButton";
 import { AssetType, AssetState, IAsset } from "../../../../models/applicationState";
+import { Zoom } from "../../../../common/zoom";
 
 describe("Video Asset Component", () => {
     let wrapper: ReactWrapper<IVideoAssetProps, IVideoAssetState> = null;
@@ -32,7 +33,7 @@ describe("Video Asset Component", () => {
         onDeactivated: onDeactivatedHandler,
         onChildAssetSelected: onChildSelectedHandler,
         onBeforeAssetChanged: onBeforeAssetChangedHandler,
-        additionalSettings: { videoSettings: { frameExtractionRate: 1 }, zoom: 1.0, zoomStep: 0.1 },
+        additionalSettings: { videoSettings: { frameExtractionRate: 1 }, zoom: new Zoom() },
     };
 
     beforeEach(() => {

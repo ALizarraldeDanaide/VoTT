@@ -4,6 +4,7 @@ import { strings } from "../../../../common/strings";
 import { ImageAsset } from "./imageAsset";
 import { VideoAsset } from "./videoAsset";
 import { TFRecordAsset } from "./tfrecordAsset";
+import { Zoom } from "../../../../common/zoom";
 
 export interface IGenericContentSource {
     width: number;
@@ -66,8 +67,7 @@ export interface IAssetPreviewState {
  */
 export interface IAssetPreviewSettings {
     videoSettings: IProjectVideoSettings;
-    zoom: number;
-    zoomStep: number;
+    zoom: Zoom;
 }
 
 /**
@@ -106,8 +106,8 @@ export class AssetPreview extends React.Component<IAssetPreviewProps, IAssetPrev
         let style;
         if ( this.props.additionalSettings && this.props.additionalSettings.zoom ) {
             style = {};
-            style.width = Math.round(this.props.asset.size.width * this.props.additionalSettings.zoom)+ "px";
-            style.height = Math.round(this.props.asset.size.height * this.props.additionalSettings.zoom) + "px";
+            style.width = Math.round(this.props.asset.size.width * this.props.additionalSettings.zoom.actualZoom())+ "px";
+            style.height = Math.round(this.props.asset.size.height * this.props.additionalSettings.zoom.actualZoom()) + "px";
         }
         const { loaded, hasError } = this.state;
         const size = this.props.asset.size;
